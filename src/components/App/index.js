@@ -26,35 +26,34 @@ class App extends Component {
       searchKey: '',
       searchTerm: DEFAULT_QUERY,
       isLoading: false,
-      sortKey: 'NONE',
-      isSortReverse: false,
     };
     this.needsToSearchTopstories = this.needsToSearchTopstories.bind(this);
     this.setSearchTopstories = this.setSearchTopstories.bind(this); this.fetchSearchTopstories = this.fetchSearchTopstories.bind(this);
     this.onSearchChange = this.onSearchChange.bind(this);
     this.onSearchSubmit = this.onSearchSubmit.bind(this);
     this.onDismiss = this.onDismiss.bind(this);
-    this.onSort = this.onSort.bind(this);
   }
   needsToSearchTopstories(searchTerm) {
     return !this.state.results[searchTerm];
   }
   setSearchTopstories(result) {
     const { hits, page } = result;
-    const { searchKey, results } = this.state;
-    const oldHits = results && results[searchKey]
-      ? results[searchKey].hits
-      : [];
-    const updatedHits = [
-      ...oldHits,
-      ...hits
-    ];
-    this.setState({ 
-      results: {
-        ...results,
-        [searchKey]: {hits: updatedHits, page }
-      },
-      isLoading: false,
+    this.setState(prevState => {
+      const { searchKey, results } = prevState;
+      const oldHits = results && results[searchKey]
+        ? results[searchKey].hits
+        : [];
+      const updatedHits = [
+        ...oldHits,
+        ...hits
+      ];
+      return {
+        results: {
+          ...results,
+          [searchKey]: {hits: updatedHits, page }
+        },
+        isLoading: false,
+      };
     });
   }
   fetchSearchTopstories(searchTerm, page) {
@@ -97,19 +96,12 @@ class App extends Component {
       }
     });
   }
-  onSort(sortKey) {
-    const isSortReverse = this.state.sortKey === sortKey && !this.state.isSortReverse;
-    this.setState({ sortKey, isSortReverse });
-  }
-
   render() {
     const { 
       searchTerm,
       results, 
       searchKey,
       isLoading,
-      sortKey,
-      isSortReverse,
     } = this.state;
     const page = ( 
       results && 
@@ -132,9 +124,6 @@ class App extends Component {
           </Search>
         </div>
         <Table  list={list}
-                sortKey={sortKey}
-                isSortReverse={isSortReverse} 
-                onSort={this.onSort}
                 onDismiss={this.onDismiss} />
         <div className="interactions">
           <ButtonWithLoading
