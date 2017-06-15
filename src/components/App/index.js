@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import { Button } from '../Buttons';
 import { Table } from '../Tables';
 import { Search } from '../Search';
+import { withLoading } from '../Loading';
+
 import './index.css';
 import {
   DEFAULT_QUERY,
@@ -14,6 +16,8 @@ import {
   PARAM_HPP,
 } from '../../constants';
 
+const ButtonWithLoading = withLoading(Button);
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -21,12 +25,16 @@ class App extends Component {
       results: null,
       searchKey: '',
       searchTerm: DEFAULT_QUERY,
+      isLoading: false,
+      sortKey: 'NONE',
+      isSortReverse: false,
     };
     this.needsToSearchTopstories = this.needsToSearchTopstories.bind(this);
     this.setSearchTopstories = this.setSearchTopstories.bind(this); this.fetchSearchTopstories = this.fetchSearchTopstories.bind(this);
     this.onSearchChange = this.onSearchChange.bind(this);
     this.onSearchSubmit = this.onSearchSubmit.bind(this);
     this.onDismiss = this.onDismiss.bind(this);
+    this.onSort = this.onSort.bind(this);
   }
   needsToSearchTopstories(searchTerm) {
     return !this.state.results[searchTerm];
@@ -45,15 +53,20 @@ class App extends Component {
       results: {
         ...results,
         [searchKey]: {hits: updatedHits, page }
-      } 
+      },
+      isLoading: false,
     });
   }
   fetchSearchTopstories(searchTerm, page) {
+    this.setState({ isLoading: true });
     const url = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`;
     console.log(url);
     fetch(url)
       .then(response => response.json())
-      .then(result => this.setSearchTopstories(result));
+      .then(result => this.setSearchTopstories(result))
+      .catch((error) => {
+        console.error(error);
+      });
   }
   componentDidMount() {
     const { searchTerm } = this.state;
@@ -84,11 +97,19 @@ class App extends Component {
       }
     });
   }
+  onSort(sortKey) {
+    const isSortReverse = this.state.sortKey === sortKey && !this.state.isSortReverse;
+    this.setState({ sortKey, isSortReverse });
+  }
+
   render() {
     const { 
       searchTerm,
       results, 
-      searchKey 
+      searchKey,
+      isLoading,
+      sortKey,
+      isSortReverse,
     } = this.state;
     const page = ( 
       results && 
@@ -111,11 +132,16 @@ class App extends Component {
           </Search>
         </div>
         <Table  list={list}
+                sortKey={sortKey}
+                isSortReverse={isSortReverse} 
+                onSort={this.onSort}
                 onDismiss={this.onDismiss} />
         <div className="interactions">
-          <Button onClick={() => this.fetchSearchTopstories(searchKey, page + 1)}>
+          <ButtonWithLoading
+            isLoading={isLoading}
+            onClick={() => this.fetchSearchTopstories(searchKey, page + 1)}>
             More
-          </Button>
+          </ButtonWithLoading>
         </div>
       </div>
     );
